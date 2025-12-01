@@ -1,0 +1,80 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<h2 class="ui header">Your Cart</h2>
+
+{% if cart["item_count"] > 0 %}
+    <div class="ui segment">
+        <table class="ui very basic celled table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th class="collapsing">SKU</th>
+                    <th class="collapsing">Unit price</th>
+                    <th class="collapsing">Quantity</th>
+                    <th class="collapsing">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart["items"] %}
+                <tr>
+                    <td>
+                        <strong>{{ item.name }}</strong>
+                        {% if item.stock_status == "low_stock" %}
+                            <div class="ui yellow tiny label">Low stock</div>
+                        {% elif item.stock_status == "out_of_stock" %}
+                            <div class="ui red tiny label">Out of stock</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.sku }}</td>
+                    <td>${{ "%.2f"|format(item.unit_price_cents / 100) }}</td>
+                    <td>{{ item.qty }}</td>
+                    <td>${{ "%.2f"|format(item.subtotal_cents / 100) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="full-width">
+                <tr>
+                    <th colspan="5">
+                        <div class="ui right floated header">
+                            Total:
+                            <span style="margin-left: 0.5em;">
+                                ${{ "%.2f"|format(cart["total_cents"] / 100) }}
+                            </span>
+                        </div>
+                    </th>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="ui grid">
+            <div class="eight wide column">
+                <form method="post" action="{{ url_for('cart.clear_cart') }}">
+                    <button type="submit" class="ui basic red button">
+                        <i class="trash icon"></i>
+                        Clear cart
+                    </button>
+                </form>
+            </div>
+            <div class="eight wide right aligned column">
+                <a href="{{ url_for('checkout.checkout_review') }}" class="ui primary button">
+                    Proceed to checkout
+                    <i class="right arrow icon"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="ui message">
+        <div class="header">Your cart is empty</div>
+        <p>
+            Browse the catalog and add items to your cart to see them here.
+        </p>
+        <a class="ui primary button" href="{{ url_for('shop.products') }}">
+            Start shopping
+        </a>
+    </div>
+{% endif %}
+
+{% endblock %}

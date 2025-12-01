@@ -1,0 +1,121 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<h2 class="ui header">Checkout</h2>
+
+<div class="ui stackable grid">
+    <div class="eight wide column">
+        <div class="ui segment">
+            <h4 class="ui header">Shipping information</h4>
+            {% if user %}
+                <!-- user address lines -->
+            {% else %}
+                <div class="ui warning message">
+                    <div class="header">You are not logged in</div>
+                    <p>You can still test checkout, but orders will be attached to a default user.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="eight wide column">
+        <div class="ui segment">
+            <h4 class="ui header">Order summary</h4>
+            <table class="ui very basic celled table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th class="collapsing">Qty</th>
+                        <th class="collapsing">Price</th>
+                        <th class="collapsing">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart["items"] %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.qty }}</td>
+                        <td>${{ "%.2f"|format(item.unit_price_cents / 100) }}</td>
+                        <td>${{ "%.2f"|format(item.subtotal_cents / 100) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="4" class="right aligned">
+                            Total:
+                            <strong>${{ "%.2f"|format(cart["total_cents"] / 100) }}</strong>
+                        </th>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div id="checkoutMessage" class="ui small hidden message"></div>
+
+            <button id="placeOrderButton" class="ui primary button">
+                Place order
+                <i class="right arrow icon"></i>
+            </button>
+
+            <a href="{{ url_for('cart.view_cart_page') }}" class="ui button">
+                Back to cart
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(function() {
+    $('#placeOrderButton').on('click', function(e) {
+        e.preventDefault();
+
+        var $btn = $(this);
+        if ($btn.prop('disabled')) {
+            return;
+        }
+
+        $btn.addClass('loading');
+
+        fetch("/checkout", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({})
+        })
+        .then(function(resp) { return resp.json(); })
+        .then(function(data) {
+            $btn.removeClass('loading');
+            var $msg = $('#checkoutMessage');
+            $msg.removeClass('hidden negative positive');
+
+            if (data.success) {
+                $msg.addClass('positive');
+                var html = 'Payment successful. Order #' + data.order_id;
+                if (data.delivery_estimate) {
+                    html += '<br>Estimated delivery: ' + data.delivery_estimate;
+                }
+                $msg.html(html);
+                setTimeout(function() {
+                    window.location.href = "{{ url_for('orders.list_orders') }}";
+                }, 1500);
+            } else {
+                $msg.addClass('negative');
+                $msg.text(data.error || "Payment failed. Please try again.");
+            }
+        })
+        .catch(function() {
+            $btn.removeClass('loading');
+            var $msg = $('#checkoutMessage');
+            $msg.removeClass('hidden positive').addClass('negative');
+            $msg.text('Unexpected error while placing order.');
+        });
+    });
+});
+</script>
+{% endblock %}

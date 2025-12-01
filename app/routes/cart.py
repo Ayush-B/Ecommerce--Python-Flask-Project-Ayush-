@@ -5,7 +5,7 @@ Expose endpoints for adding items to the cart, updating quantities,
 removing items, clearing the cart, and viewing the cart contents.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for
 
 from ..models import Product
 from ..services.cart import CartService
@@ -19,7 +19,7 @@ def view_cart():
     Return the current session cart summary.
     """
     summary = CartService.get_cart_summary()
-    return jsonify(summary)
+    return render_template("cart/view.html", cart=summary)
 
 
 @cart_bp.post("/cart/add/<int:product_id>")
@@ -91,4 +91,25 @@ def clear_cart():
     """
     CartService.clear()
     summary = CartService.get_cart_summary()
-    return jsonify({"message": "Cart cleared", "cart": summary})
+
+    # API / JSON clients
+    if request.is_json or (
+            request.accept_mimetypes["application/json"]
+            > request.accept_mimetypes["text/html"]
+    ):
+        return jsonify({"message": "Cart cleared", "cart": summary})
+
+    # Browser form → HTML redirect
+    return redirect(url_for("cart.view_cart_page"))
+
+
+@cart_bp.get("/view")
+def view_cart_page():
+    """
+    HTML cart page.
+
+    Uses CartService.get_cart_summary() to render a Semantic UI cart view.
+    Keeps /cart as a JSON endpoint for API/tests.
+    """
+    summary = CartService.get_cart_summary()
+    return render_template("cart/view.html", cart=summary)

@@ -43,7 +43,7 @@
         <div class="right menu">
 
             <!-- Cart -->
-            <a href="{{ url_for('cart.view_cart') }}" class="item">
+            <a href="{{ url_for('cart.view_cart_page') }}" class="item">
                 <i class="shopping cart icon"></i>
                 Cart
                 {% if session.get('cart', {}).get('item_count', 0) > 0 %}
