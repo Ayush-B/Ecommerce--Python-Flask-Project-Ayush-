@@ -8,5 +8,13 @@ from .base import BaseModel
 from .user import User
 from .category import Category
 from .product import Product
+from .order import Order, OrderItem
 
-__all__ = ["BaseModel", "User", "Category", "Product"]
+__all__ = [
+    "BaseModel",
+    "User",
+    "Category",
+    "Product",
+    "Order",
+    "OrderItem",
+]
