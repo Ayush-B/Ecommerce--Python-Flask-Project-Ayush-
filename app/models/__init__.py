@@ -1,6 +1,11 @@
 """
 Models package.
 
-SQLAlchemy ORM models will be defined here, starting with a shared BaseModel
-in a later commit.
+This package groups all ORM models used by the ecommerce application.
+The BaseModel provides common fields and helpers that other models
+inherit from.
 """
+
+from .base import BaseModel
+
+__all__ = ["BaseModel"]

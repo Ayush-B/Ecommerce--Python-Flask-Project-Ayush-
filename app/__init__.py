@@ -1,15 +1,15 @@
 """
 Flask application factory for the ecommerce project.
 
-The goal of this module is to create the Flask application cleanly,
-load configuration, register extensions, and attach blueprints.
-
-Only essential functionality is implemented at this stage. Database
-setup, blueprints, and services will be added in later commits.
+This module creates and configures the Flask application instance.
+Extensions like the database are initialized here, and routes or
+blueprints are attached in a controlled order.
 """
 
 from flask import Flask
+
 from .config import get_config
+from .extensions import db
 
 
 def create_app():
@@ -22,9 +22,20 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(get_config())
 
+    register_extensions(app)
     register_routes(app)
 
     return app
+
+
+def register_extensions(app):
+    """
+    Initialize Flask extensions with the application context.
+
+    At this stage we only have SQLAlchemy. Other extensions like
+    migration tools will be added in later commits.
+    """
+    db.init_app(app)
 
 
 def register_routes(app):
@@ -33,7 +44,7 @@ def register_routes(app):
 
     Full blueprints for shop, auth, and admin will be added in later commits.
     """
+
     @app.get("/")
     def index():
-        return "Ecommerce app is running. Blueprints will be added in later commits."
-
+        return "Ecommerce app is running. Database is configured; models will be added next."
