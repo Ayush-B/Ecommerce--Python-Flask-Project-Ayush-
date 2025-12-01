@@ -21,6 +21,7 @@ class User(BaseModel):
 
     __tablename__ = "users"
 
+    name = db.Column(db.String(80))
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
 

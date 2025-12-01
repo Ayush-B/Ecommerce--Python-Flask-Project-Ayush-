@@ -2,10 +2,11 @@
 Authentication routes: register, login, logout, and profile management.
 """
 
-from flask import Blueprint, request, session, jsonify, render_template, redirect, url_for
-from ..extensions import db
+from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for, flash
 from ..models import User
+from ..extensions import db
 from ..utils.auth_decorators import login_required
+
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -91,39 +92,63 @@ def logout():
     return redirect(url_for("shop.home"))
 
 
-
 @auth_bp.get("/profile")
 @login_required
 def profile():
-    """
-    Retrieve the logged-in user's profile.
-    """
     user = User.query.get(session["user_id"])
-    return jsonify(user.to_dict())
+    return render_template("auth/profile.html", user=user)
 
 
-@auth_bp.post("/profile")
+@auth_bp.post("/profile/update")
 @login_required
 def update_profile():
-    """
-    Update user profile fields including shipping address.
-    """
     user = User.query.get(session["user_id"])
-    data = request.json or {}
 
-    # Allowed profile fields
-    fields = [
-        "address_line",
-        "city",
-        "state",
-        "postal_code",
-        "country",
-    ]
+    name = request.form.get("name")
+    address_line = request.form.get("address_line")
+    city = request.form.get("city")
+    state = request.form.get("state")
+    postal_code = request.form.get("postal_code")
+    country = request.form.get("country")
 
-    for field in fields:
-        if field in data:
-            setattr(user, field, data[field])
+    if not name:
+        flash("Name cannot be empty.", "error")
+        return redirect(url_for("auth.profile"))
 
-    user.save()
+    user.name = name  # assuming you add this column as above
+    user.address_line = address_line
+    user.city = city
+    user.state = state
+    user.postal_code = postal_code
+    user.country = country
 
-    return jsonify({"message": "Profile updated", "profile": user.to_dict()})
+    db.session.commit()
+
+    flash("Profile updated successfully.", "success")
+    return redirect(url_for("auth.profile"))
+
+
+@auth_bp.post("/profile/password")
+@login_required
+def update_password():
+    user = User.query.get(session["user_id"])
+
+    old_password = request.form.get("old_password")
+    new_password = request.form.get("new_password")
+
+    if not old_password or not new_password:
+        flash("Both password fields are required.", "error")
+        return redirect(url_for("auth.profile"))
+
+    # Use the User model's check_password method
+    if not user.check_password(old_password):
+        flash("Old password is incorrect.", "error")
+        return redirect(url_for("auth.profile"))
+
+    # Use the User model's set_password method
+    user.set_password(new_password)
+    db.session.commit()
+
+    flash("Password updated successfully.", "success")
+    return redirect(url_for("auth.profile"))
+
