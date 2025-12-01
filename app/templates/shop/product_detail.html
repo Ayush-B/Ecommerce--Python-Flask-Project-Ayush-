@@ -1,0 +1,113 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<div class="ui stackable grid">
+    <div class="six wide column">
+        <div class="ui segment">
+            <div class="ui fluid image">
+                {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}">
+                {% else %}
+                    <img src="https://via.placeholder.com/600x400?text={{ product.name|e }}" alt="{{ product.name }}">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="ten wide column">
+        <h2 class="ui header">{{ product.name }}</h2>
+        <div class="meta" style="margin-bottom: 0.5em;">
+            {% if product.category %}
+                <span class="category">{{ product.category }}</span>
+            {% else %}
+                <span class="category">Uncategorized</span>
+            {% endif %}
+        </div>
+
+        <h3 class="ui header">
+            ${{ "%.2f"|format(product.price_cents / 100) }}
+        </h3>
+
+        <p>
+            {% if product.description %}
+                {{ product.description }}
+            {% else %}
+                No description provided for this product.
+            {% endif %}
+        </p>
+
+        <p>
+            {% if product.qty > 0 %}
+                <span class="ui green text">
+                    <i class="check circle icon"></i> In stock ({{ product.qty }} available)
+                </span>
+            {% else %}
+                <span class="ui red text">
+                    <i class="times circle icon"></i> Out of stock
+                </span>
+            {% endif %}
+        </p>
+
+        {% if product.qty > 0 %}
+            <div class="ui divider"></div>
+
+            <form id="addToCartForm" class="ui form">
+                <div class="inline fields">
+                    <div class="field">
+                        <label>Quantity</label>
+                        <input type="number" name="qty" id="qty" value="1" min="1" max="{{ product.qty }}">
+                    </div>
+                    <div class="field">
+                        <button type="submit" class="ui primary button">
+                            <i class="shopping cart icon"></i>
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+                <div id="addToCartMessage" class="ui small hidden message"></div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(function() {
+    $('#addToCartForm').on('submit', function(e) {
+        e.preventDefault();
+        var qty = parseInt($('#qty').val(), 10) || 1;
+
+        $.ajax({
+            url: "{{ url_for('cart.add_to_cart', product_id=product.id) }}",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({qty: qty}),
+            success: function(resp) {
+                $('#addToCartMessage')
+                    .removeClass('hidden negative')
+                    .addClass('positive')
+                    .text('Added to cart. Redirecting to cart...')
+                    ;
+
+                setTimeout(function() {
+                    window.location.href = "{{ url_for('cart.view_cart') }}";
+                }, 800);
+            },
+            error: function(xhr) {
+                var msg = 'Could not add to cart.';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    msg = xhr.responseJSON.error;
+                }
+                $('#addToCartMessage')
+                    .removeClass('hidden positive')
+                    .addClass('negative')
+                    .text(msg);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

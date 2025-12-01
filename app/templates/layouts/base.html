@@ -30,11 +30,14 @@
         <div class="item">
             <form action="{{ url_for('shop.products') }}" method="get" class="ui form">
                 <div class="ui action input">
-                    <input type="text" name="q" placeholder="Search products..."
-                           value="{{ request.args.get('q', '') }}">
+                    <label>
+                        <input type="text" name="search" placeholder="Search products..."
+                               value="{{ request.args.get('search', '') }}">
+                    </label>
                     <button class="ui button">Search</button>
                 </div>
             </form>
+
         </div>
 
         <div class="right menu">

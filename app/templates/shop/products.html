@@ -1,0 +1,209 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<div class="ui grid">
+    <div class="sixteen wide column">
+        <h2 class="ui header">Products</h2>
+        <p>Browse the catalog, refine by search, category, and sort order.</p>
+    </div>
+</div>
+
+<div class="ui stackable grid">
+    <!-- Filters sidebar -->
+    <div class="four wide column">
+        <div class="ui segment">
+            <h4 class="ui header">Filters</h4>
+            <form class="ui form" method="get" action="{{ url_for('shop.products') }}">
+
+                <div class="field">
+                    <label>Search</label>
+                    <label>
+                        <input type="text"
+                               name="search"
+                               value="{{ search }}"
+                               placeholder="Name or description">
+                    </label>
+                </div>
+
+                <div class="field">
+                    <label>Category</label>
+                    <label>
+                        <select name="category" class="ui dropdown">
+                            <option value="">All categories</option>
+                            {% for c in categories %}
+                                <option value="{{ c.name }}"
+                                        {% if category_filter == c.name %}selected{% endif %}>
+                                    {{ c.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </div>
+
+                <div class="field">
+                    <label>Sort by</label>
+                    <label>
+                        <select name="sort" class="ui dropdown">
+                            {% if sort == "newest" %}
+                                <option value="newest" selected>Newest</option>
+                            {% else %}
+                                <option value="newest">Newest</option>
+                            {% endif %}
+
+                            {% if sort == "price_asc" %}
+                                <option value="price_asc" selected>Price: Low to High</option>
+                            {% else %}
+                                <option value="price_asc">Price: Low to High</option>
+                            {% endif %}
+
+                            {% if sort == "price_desc" %}
+                                <option value="price_desc" selected>Price: High to Low</option>
+                            {% else %}
+                                <option value="price_desc">Price: High to Low</option>
+                            {% endif %}
+                        </select>
+                    </label>
+                </div>
+
+                <button class="ui primary button" type="submit">Apply</button>
+                <a class="ui button" href="{{ url_for('shop.products') }}">Reset</a>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product listing -->
+    <div class="twelve wide column">
+
+        {% if products %}
+            <div class="ui stackable three cards featured-cards">
+
+                {% for p in products %}
+                <div class="card">
+
+                    <div class="image">
+                        {% if p.image_url %}
+                            <img src="{{ p.image_url }}" alt="{{ p.name }}">
+                        {% else %}
+                            <img src="https://via.placeholder.com/400x250?text={{ p.name|e }}" alt="{{ p.name }}">
+                        {% endif %}
+                    </div>
+
+                    <div class="content">
+                        <a class="header"
+                           href="{{ url_for('shop.product_detail', product_id=p.id) }}">
+                            {{ p.name }}
+                        </a>
+
+                        <div class="meta">
+                            {% if p.category %}
+                                {{ p.category }}
+                            {% else %}
+                                Uncategorized
+                            {% endif %}
+                        </div>
+
+                        <div class="description">
+                            {% if p.description %}
+                                {{ p.description[:120] }}{% if p.description|length > 120 %}...{% endif %}
+                            {% else %}
+                                No description provided.
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="extra content">
+                        <span class="right floated">
+                            <strong>${{ "%.2f"|format(p.price_cents / 100) }}</strong>
+                        </span>
+
+                        {% if p.qty > 0 %}
+                            <span class="green text">
+                                <i class="check circle icon"></i> In stock
+                            </span>
+                        {% else %}
+                            <span class="red text">
+                                <i class="times circle icon"></i> Out of stock
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="extra content">
+                        <a href="{{ url_for('shop.product_detail', product_id=p.id) }}"
+                           class="ui tiny primary button">
+                           View details
+                        </a>
+                    </div>
+
+                </div>
+                {% endfor %}
+
+            </div>
+
+            <!-- Pagination -->
+            {% if pages > 1 %}
+            <div class="ui center aligned basic segment">
+                <div class="ui pagination menu">
+
+                    {% if page > 1 %}
+                        <a class="item"
+                           href="{{ url_for('shop.products',
+                                            page=page-1,
+                                            search=search,
+                                            category=category_filter,
+                                            sort=sort) }}">
+                            Previous
+                        </a>
+                    {% else %}
+                        <div class="disabled item">Previous</div>
+                    {% endif %}
+
+                    {% for number in range(1, pages + 1) %}
+                        {% if number == page %}
+                            <div class="active item">{{ number }}</div>
+                        {% else %}
+                            <a class="item"
+                               href="{{ url_for('shop.products',
+                                                page=number,
+                                                search=search,
+                                                category=category_filter,
+                                                sort=sort) }}">
+                                {{ number }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page < pages %}
+                        <a class="item"
+                           href="{{ url_for('shop.products',
+                                            page=page+1,
+                                            search=search,
+                                            category=category_filter,
+                                            sort=sort) }}">
+                            Next
+                        </a>
+                    {% else %}
+                        <div class="disabled item">Next</div>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% endif %}
+
+        {% else %}
+        <div class="ui message">
+            <div class="header">No products found</div>
+            <p>Try adjusting your filters or search query.</p>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$('.ui.dropdown').dropdown();
+</script>
+{% endblock %}

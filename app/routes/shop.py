@@ -5,6 +5,7 @@ Public catalog browsing routes: product listing, filters, and detail view.
 from flask import Blueprint, request, jsonify, render_template
 
 from ..services.catalog import CatalogService
+from ..models import Category
 
 shop_bp = Blueprint("shop", __name__)
 
@@ -12,17 +13,15 @@ shop_bp = Blueprint("shop", __name__)
 @shop_bp.get("/")
 def home():
     """
-    Storefront home page: show a hero plus a featured products grid.
+    Storefront home page: hero + featured products.
     """
     data = CatalogService.list_products(
         page=1,
-        per_page=8,          # show up to 8 featured items
+        per_page=8,
         search=None,
         category=None,
         sort="newest",
     )
-    # Adjust the key based on how CatalogService.list_products returns data.
-    # Assuming it returns {"products": [...], "page": ..., "pages": ..., "total": ...}
     featured_products = data.get("products", [])
 
     return render_template("home.html", featured_products=featured_products)
@@ -38,8 +37,8 @@ def products():
       - search
       - category
       - sort: newest, price_asc, price_desc
+      - format=json (optional) to get JSON instead of HTML.
     """
-
     page = request.args.get("page", default=1, type=int)
     search = request.args.get("search")
     category = request.args.get("category")
@@ -52,17 +51,44 @@ def products():
         category=category,
         sort=sort,
     )
-    return jsonify(data)
+
+    # Optional JSON API
+    if request.args.get("format") == "json":
+        return jsonify(data)
+
+    # Get list of categories for the filter dropdown
+    categories = Category.query.order_by(Category.name.asc()).all()
+
+    return render_template(
+        "shop/products.html",
+        products=data.get("products", []),
+        page=data.get("page", page),
+        pages=data.get("pages", 1),
+        total=data.get("total", 0),
+        search=search or "",
+        category_filter=category or "",
+        sort=sort or "newest",
+        categories=categories,
+    )
 
 
 @shop_bp.get("/product/<int:product_id>")
 def product_detail(product_id):
     """
-    Retrieve detail of a single product.
+    Product detail page.
+
+    - Normal use: renders HTML page.
+    - With ?format=json: returns JSON representation.
     """
     product = CatalogService.get_product(product_id)
 
     if not product:
-        return jsonify({"error": "Product not found"}), 404
+        if request.args.get("format") == "json":
+            return jsonify({"error": "Product not found"}), 404
+        # Simple HTML 404 for now
+        return render_template("errors/404.html"), 404
 
-    return jsonify(product.to_dict())
+    if request.args.get("format") == "json":
+        return jsonify(product.to_dict())
+
+    return render_template("shop/product_detail.html", product=product)
