@@ -13,6 +13,8 @@ from .extensions import db
 from .utils.admin_seed import seed_admin
 from .routes.auth import auth_bp
 from .routes.shop import shop_bp
+from .routes.cart import cart_bp
+
 
 
 def create_app():
@@ -51,10 +53,11 @@ def register_extensions(app):
 
 def register_routes(app):
     """
-    Attach blueprint and catalog routes.
+    Attach blueprint and catalog routes and cart.
     """
     app.register_blueprint(auth_bp)
     app.register_blueprint(shop_bp)
+    app.register_blueprint(cart_bp)
 
     @app.get("/")
     def index():
