@@ -2,7 +2,7 @@
 Authentication routes: register, login, logout, and profile management.
 """
 
-from flask import Blueprint, request, session, jsonify
+from flask import Blueprint, request, session, jsonify, render_template
 from ..extensions import db
 from ..models import User
 from ..utils.auth_decorators import login_required
@@ -58,6 +58,16 @@ def login():
     session["role"] = user.role
 
     return jsonify({"message": "Logged in", "user_id": user.id})
+
+
+@auth_bp.get("/login")
+def login_page():
+    return render_template("auth/login.html")
+
+
+@auth_bp.get("/register")
+def register_page():
+    return render_template("auth/register.html")
 
 
 @auth_bp.post("/logout")

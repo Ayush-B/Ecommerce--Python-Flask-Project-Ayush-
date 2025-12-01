@@ -49,8 +49,20 @@
         <tbody>
             {% for item in order.items %}
             <tr>
-                <td>{{ item.product_name }}</td>
-                <td>{{ item.sku }}</td>
+                <td>
+                    {% if item.product %}
+                        {{ item.product.name }}
+                    {% else %}
+                        [Product deleted]
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.product %}
+                        {{ item.product.sku }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td>${{ "%.2f"|format(item.unit_price_cents / 100) }}</td>
                 <td>{{ item.qty }}</td>
                 <td>${{ "%.2f"|format(item.subtotal_cents / 100) }}</td>

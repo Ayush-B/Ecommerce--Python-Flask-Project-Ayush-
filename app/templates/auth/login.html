@@ -1,0 +1,61 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="ui centered grid" style="margin-top: 4em;">
+    <div class="eight wide column">
+        <h2 class="ui header">Sign In</h2>
+
+        <form id="loginForm" class="ui form">
+            <div class="field">
+                <label>Email</label>
+                <input type="email" name="email" required placeholder="you@example.com">
+            </div>
+
+            <div class="field">
+                <label>Password</label>
+                <input type="password" name="password" required placeholder="Your password">
+            </div>
+
+            <button type="submit" class="ui primary button fluid">Sign In</button>
+
+            <div id="loginError" class="ui red message hidden" style="margin-top: 1em;"></div>
+
+            <div class="ui divider"></div>
+
+            <p>Don't have an account?
+                <a href="{{ url_for('auth.register_page') }}">Create one here</a>
+            </p>
+        </form>
+    </div>
+</div>
+
+<script>
+document.querySelector("#loginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const errorBox = document.getElementById("loginError");
+    errorBox.classList.add("hidden");
+
+    const payload = {
+        email: this.email.value,
+        password: this.password.value
+    };
+
+    const resp = await fetch("{{ url_for('auth.login') }}", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+        errorBox.textContent = data.error || "Login failed";
+        errorBox.classList.remove("hidden");
+        return;
+    }
+
+    window.location.href = "/";
+});
+</script>
+{% endblock %}
