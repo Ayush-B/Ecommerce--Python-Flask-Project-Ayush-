@@ -7,6 +7,7 @@ blueprints are attached in a controlled order.
 """
 
 from flask import Flask
+from datetime import datetime
 
 from .config import get_config
 from .extensions import db
@@ -43,6 +44,11 @@ def create_app():
 
     register_routes(app)
 
+    # Make now() available in all Jinja templates
+    @app.context_processor
+    def inject_now():
+        return {"now": datetime.utcnow}
+
     return app
 
 
@@ -70,6 +76,7 @@ def register_routes(app):
     app.register_blueprint(admin_orders_bp)
     app.register_blueprint(admin_activity_bp)
 
-    @app.get("/")
-    def index():
-        return "Ecommerce backend is running with full admin, order, and activity logging."
+    @app.get("/health")
+    def health():
+        return "OK"
+

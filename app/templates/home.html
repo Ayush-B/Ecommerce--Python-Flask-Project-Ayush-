@@ -1,0 +1,149 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<!-- Hero / Banner -->
+<div class="ui inverted vertical segment hero-segment">
+    <div class="ui stackable grid container">
+        <div class="eight wide column">
+            <h1 class="ui inverted header hero-title">
+                Welcome to MyStore
+            </h1>
+            <p class="hero-subtitle">
+                Browse a curated catalog, add items to your cart, and complete a full checkout
+                flow built with Flask, SQLAlchemy, and Semantic UI.
+            </p>
+            <a href="{{ url_for('shop.products') }}" class="ui huge primary button" style="margin-top: 1.5em;">
+                Shop Now
+                <i class="right arrow icon"></i>
+            </a>
+        </div>
+        <div class="eight wide right aligned column">
+            <div class="ui large image">
+                <img src="https://via.placeholder.com/600x320?text=Your+Storefront+Banner" alt="Storefront banner">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Categories teaser (static for now) -->
+<div class="ui vertical segment">
+    <div class="ui container">
+        <h2 class="ui header">Shop by Category</h2>
+        <div class="ui stackable three column grid" style="margin-top: 1.5em;">
+            <div class="column">
+                <div class="ui raised segment center aligned">
+                    <i class="large laptop icon"></i>
+                    <h4 class="ui header" style="margin-top: 0.5em;">Electronics</h4>
+                    <p>Devices, accessories, and more.</p>
+                </div>
+            </div>
+            <div class="column">
+                <div class="ui raised segment center aligned">
+                    <i class="large tshirt icon"></i>
+                    <h4 class="ui header" style="margin-top: 0.5em;">Apparel</h4>
+                    <p>Clothing and lifestyle items.</p>
+                </div>
+            </div>
+            <div class="column">
+                <div class="ui raised segment center aligned">
+                    <i class="large home icon"></i>
+                    <h4 class="ui header" style="margin-top: 0.5em;">Home & Living</h4>
+                    <p>Everything for your space.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Featured Products -->
+<div class="ui stackable four cards featured-cards" style="margin-top: 1.5em;">
+    <div class="ui container">
+        <div class="ui stackable grid">
+            <div class="twelve wide column">
+                <h2 class="ui header">Featured Products</h2>
+            </div>
+            <div class="four wide right aligned column">
+                <a href="{{ url_for('shop.products') }}" class="ui small basic button">
+                    View all products
+                    <i class="right arrow icon"></i>
+                </a>
+            </div>
+        </div>
+
+        {% if featured_products %}
+            <div class="ui stackable four cards" style="margin-top: 1.5em;">
+                {% for p in featured_products %}
+                    <div class="card">
+                        <div class="image" style="min-height: 200px; display: flex; align-items: center; justify-content: center; background: #f0f0f0;">
+                            {% if p.image_url %}
+                                <img src="{{ p.image_url }}" alt="{{ p.name }}">
+                            {% else %}
+                                <img src="https://via.placeholder.com/400x250?text={{ p.name|e }}" alt="{{ p.name }}">
+                            {% endif %}
+                        </div>
+                        <div class="content">
+                            <div class="header" title="{{ p.name }}">
+                                {{ p.name }}
+                            </div>
+                            <div class="meta">
+                                {% if p.category %}
+                                    {{ p.category }}
+                                {% else %}
+                                    Uncategorized
+                                {% endif %}
+                            </div>
+                            <div class="description" style="min-height: 4em; margin-top: 0.5em;">
+                                {% if p.description %}
+                                    {{ p.description[:120] }}{% if p.description|length > 120 %}...{% endif %}
+                                {% else %}
+                                    No description provided.
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="extra content">
+                            <span class="right floated">
+                                <strong>
+                                    ${{ "%.2f"|format(p.price_cents / 100) }}
+                                </strong>
+                            </span>
+                            {% if p.qty > 0 %}
+                                <span>
+                                    <i class="check circle icon" style="color: #21ba45;"></i>
+                                    In stock
+                                </span>
+                            {% else %}
+                                <span>
+                                    <i class="times circle icon" style="color: #db2828;"></i>
+                                    Out of stock
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="extra content">
+                            <a href="{{ url_for('shop.product_detail', product_id=p.id) }}" class="ui tiny button">
+                                Details
+                            </a>
+                            {% if p.qty > 0 %}
+                                <form action="{{ url_for('cart.view_cart') }}" method="get" style="display: inline-block;">
+                                    <button type="submit" class="ui tiny primary button">
+                                        Go to cart
+                                    </button>
+                                </form>
+                            {% else %}
+                                <button class="ui tiny disabled button">Unavailable</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="ui message">
+                <div class="header">No products yet</div>
+                <p>Once seed products into the database, they will appear here as featured items.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

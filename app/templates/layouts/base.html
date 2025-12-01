@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title or "Ecommerce Store" }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Local Semantic UI and jQuery -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/semantic.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+
+    <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/semantic.min.js') }}"></script>
+
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- Top Navigation -->
+<div class="ui fixed inverted menu">
+    <div class="ui container">
+        <a href="{{ url_for('shop.home') }}" class="header item">
+            <i class="shopping bag icon"></i>
+            MyStore
+        </a>
+
+        <a href="{{ url_for('shop.products') }}" class="item">Products</a>
+
+        <!-- Search Form -->
+        <div class="item">
+            <form action="{{ url_for('shop.products') }}" method="get" class="ui form">
+                <div class="ui action input">
+                    <input type="text" name="q" placeholder="Search products..."
+                           value="{{ request.args.get('q', '') }}">
+                    <button class="ui button">Search</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="right menu">
+
+            <!-- Cart -->
+            <a href="{{ url_for('cart.view_cart') }}" class="item">
+                <i class="shopping cart icon"></i>
+                Cart
+                {% if session.get('cart', {}).get('item_count', 0) > 0 %}
+                    <div class="ui mini circular red label">
+                        {{ session['cart']['item_count'] }}
+                    </div>
+                {% endif %}
+            </a>
+
+            {% if session.get("user_id") %}
+                <!-- User Menu -->
+                <div class="ui simple dropdown item">
+                    <i class="user icon"></i>
+                    Account <i class="dropdown icon"></i>
+                    <div class="menu">
+                        <a class="item" href="{{ url_for('auth.profile') }}">Profile</a>
+                        <a class="item" href="{{ url_for('orders.list_orders') }}">My Orders</a>
+                        <div class="divider"></div>
+                        <a class="item" href="{{ url_for('auth.logout') }}">Logout</a>
+                    </div>
+                </div>
+
+                {% if session.get("role") == "admin" %}
+                <!-- Admin Menu -->
+                <div class="ui simple dropdown item">
+                    <i class="cog icon"></i>
+                    Admin <i class="dropdown icon"></i>
+                    <div class="menu">
+                        <a class="item" href="{{ url_for('admin_products.list_products') }}">Products</a>
+                        <a class="item" href="{{ url_for('admin_users.list_users') }}">Users</a>
+                        <a class="item" href="{{ url_for('admin_orders.list_orders') }}">Orders</a>
+                        <a class="item" href="{{ url_for('admin_activity.activity_list') }}">Activity Log</a>
+                    </div>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="item">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="item">Register</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Main Body -->
+<div class="ui main container">
+    {% block content %}
+    {% endblock %}
+</div>
+
+<!-- Footer -->
+<footer>
+    <div class="ui container">
+        <div class="ui grid">
+            <div class="four wide column">
+                <h4 class="ui inverted header">MyStore</h4>
+                <p>Your modern, fast, clean ecommerce experience built with Flask.</p>
+            </div>
+            <div class="four wide column">
+                <h4 class="ui inverted header">Explore</h4>
+                <div class="ui inverted link list">
+                    <a class="item" href="{{ url_for('shop.products') }}">Products</a>
+                    <a class="item" href="{{ url_for('cart.view_cart') }}">Cart</a>
+                </div>
+            </div>
+            <div class="four wide column">
+                <h4 class="ui inverted header">Account</h4>
+                <div class="ui inverted link list">
+                    {% if session.get('user_id') %}
+                        <a class="item" href="{{ url_for('orders.list_orders') }}">Orders</a>
+                        <a class="item" href="{{ url_for('auth.profile') }}">Profile</a>
+                    {% else %}
+                        <a class="item" href="{{ url_for('auth.login') }}">Login</a>
+                        <a class="item" href="{{ url_for('auth.register') }}">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="four wide column">
+                <h4 class="ui inverted header">Admin</h4>
+                {% if session.get("role") == "admin" %}
+                <div class="ui inverted link list">
+                    <a class="item" href="{{ url_for('admin_products.list_products') }}">Product Management</a>
+                    <a class="item" href="{{ url_for('admin_users.list_users') }}">User Management</a>
+                    <a class="item" href="{{ url_for('admin_orders.list_orders') }}">Order Management</a>
+                </div>
+                {% else %}
+                <p>Restricted area</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="ui divider"></div>
+        <p>© {{ now().year }} MyStore. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+$('.ui.dropdown').dropdown();
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

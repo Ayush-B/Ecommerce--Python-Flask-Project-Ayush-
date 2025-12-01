@@ -1,0 +1,43 @@
+body {
+    background: #f7f7f7;
+}
+
+/* Space for fixed menu */
+.ui.main.container {
+    margin-top: 5em;
+    margin-bottom: 4em;
+}
+
+/* Footer styling */
+footer {
+    margin-top: 4em;
+    padding: 2em 0;
+    background: #222;
+    color: #ccc;
+}
+footer a {
+    color: #ddd;
+}
+
+/* Hero tweaks */
+.hero-segment {
+    background: #1b1c1d;
+    padding: 4em 0;
+}
+.hero-title {
+    font-size: 3em;
+    font-weight: 700;
+}
+.hero-subtitle {
+    font-size: 1.2em;
+    margin-top: 1em;
+}
+
+/* Featured cards */
+.featured-cards .card .image {
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+}

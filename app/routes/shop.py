@@ -2,11 +2,30 @@
 Public catalog browsing routes: product listing, filters, and detail view.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 
 from ..services.catalog import CatalogService
 
 shop_bp = Blueprint("shop", __name__)
+
+
+@shop_bp.get("/")
+def home():
+    """
+    Storefront home page: show a hero plus a featured products grid.
+    """
+    data = CatalogService.list_products(
+        page=1,
+        per_page=8,          # show up to 8 featured items
+        search=None,
+        category=None,
+        sort="newest",
+    )
+    # Adjust the key based on how CatalogService.list_products returns data.
+    # Assuming it returns {"products": [...], "page": ..., "pages": ..., "total": ...}
+    featured_products = data.get("products", [])
+
+    return render_template("home.html", featured_products=featured_products)
 
 
 @shop_bp.get("/products")
