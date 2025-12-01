@@ -16,6 +16,7 @@ from .routes.shop import shop_bp
 from .routes.cart import cart_bp
 from .routes.checkout import checkout_bp
 from .routes.orders import orders_bp
+from .routes.admin_products import admin_products_bp
 
 
 def create_app():
@@ -61,7 +62,8 @@ def register_routes(app):
     app.register_blueprint(cart_bp)
     app.register_blueprint(checkout_bp)
     app.register_blueprint(orders_bp)
+    app.register_blueprint(admin_products_bp)
 
     @app.get("/")
     def index():
-        return "Ecommerce backend is running with auth, catalog, cart, checkout, and orders."
+        return "Ecommerce backend is running with auth, catalog, cart, checkout, orders, and admin products."
