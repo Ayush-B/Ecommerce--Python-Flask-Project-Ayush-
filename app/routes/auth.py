@@ -2,7 +2,7 @@
 Authentication routes: register, login, logout, and profile management.
 """
 
-from flask import Blueprint, request, session, jsonify, render_template
+from flask import Blueprint, request, session, jsonify, render_template, redirect, url_for
 from ..extensions import db
 from ..models import User
 from ..utils.auth_decorators import login_required
@@ -70,13 +70,26 @@ def register_page():
     return render_template("auth/register.html")
 
 
-@auth_bp.post("/logout")
+@auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
     """
-    Clear the session and log out the user.
+    Log the user out.
+
+    - If called from an API client (expects JSON), return JSON.
+    - If called from a normal browser link, redirect to home.
     """
     session.clear()
-    return jsonify({"message": "Logged out"})
+
+    # If the client clearly prefers JSON, return JSON
+    if request.is_json or (
+        request.accept_mimetypes["application/json"]
+        > request.accept_mimetypes["text/html"]
+    ):
+        return jsonify({"message": "Logged out"})
+
+    # Default HTML behavior
+    return redirect(url_for("shop.home"))
+
 
 
 @auth_bp.get("/profile")

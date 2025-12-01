@@ -2,78 +2,87 @@
 
 {% block content %}
 
-<h2 class="ui header">My Orders</h2>
+<h2 class="ui header">Your Orders</h2>
 
-{% if orders %}
-    <div class="ui segment">
-        <table class="ui very basic celled table">
-            <thead>
-                <tr>
-                    <th>Order #</th>
-                    <th>Placed at</th>
-                    <th>Status</th>
-                    <th class="collapsing">Total</th>
-                    <th class="collapsing"></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for order in orders %}
-                <tr>
-                    <td>{{ order.id }}</td>
-                    <td>{{ order.placed_at.isoformat() if order.placed_at else "" }}</td>
-                    <td>
-                        <div class="ui tiny label">
-                            {{ order.status }}
-                        </div>
-                    </td>
-                    <td>
-                        ${{ "%.2f"|format(order.total_cents / 100) }}
-                    </td>
-                    <td>
-                        <a class="ui tiny button"
-                           href="{{ url_for('orders.order_detail', order_id=order.id) }}">
-                            View details
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        {% if pages > 1 %}
-        <div class="ui center aligned basic segment">
-            <div class="ui pagination menu">
-                {% if page > 1 %}
-                    <a class="item" href="{{ url_for('orders.list_orders', page=page-1) }}">Previous</a>
-                {% else %}
-                    <div class="disabled item">Previous</div>
-                {% endif %}
-
-                {% for number in range(1, pages + 1) %}
-                    {% if number == page %}
-                        <div class="active item">{{ number }}</div>
-                    {% else %}
-                        <a class="item" href="{{ url_for('orders.list_orders', page=number) }}">{{ number }}</a>
-                    {% endif %}
-                {% endfor %}
-
-                {% if page < pages %}
-                    <a class="item" href="{{ url_for('orders.list_orders', page=page+1) }}">Next</a>
-                {% else %}
-                    <div class="disabled item">Next</div>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
+{% if orders|length == 0 %}
+<div class="ui placeholder segment" style="margin-top: 2em;">
+    <div class="ui icon header">
+        <i class="shopping bag outline icon"></i>
+        You have no orders yet.
     </div>
+    <a href="{{ url_for('shop.home') }}" class="ui primary button">
+        Start Shopping
+    </a>
+</div>
 {% else %}
-    <div class="ui message">
-        <div class="header">No orders yet</div>
-        <p>Place an order through checkout, and it will appear on this page.</p>
-        <a href="{{ url_for('shop.products') }}" class="ui primary button">
-            Start shopping
-        </a>
-    </div>
+
+<table class="ui celled table">
+    <thead>
+        <tr>
+            <th>Order</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Total</th>
+            <th class="collapsing"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>
+                <a href="{{ url_for('orders.order_detail', order_id=order.id) }}">
+                    #{{ order.id }}
+                </a>
+            </td>
+            <td>
+                <span class="ui small label">{{ order.status }}</span>
+            </td>
+            <td>
+                {% if order.placed_at %}
+                    {{ order.placed_at.strftime("%Y-%m-%d %H:%M") }}
+                {% else %}
+                    Unknown
+                {% endif %}
+            </td>
+            <td>
+                ${{ "%.2f"|format(order.total_cents / 100) }}
+            </td>
+            <td class="right aligned">
+                <a href="{{ url_for('orders.order_detail', order_id=order.id) }}"
+                   class="ui button small">
+                    View
+                </a>
+
+                {% if order.status == "pending" %}
+                <form action="{{ url_for('orders.cancel_order', order_id=order.id) }}"
+                      method="post"
+                      style="display:inline;">
+                    <button class="ui red button small">Cancel</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="ui pagination menu">
+    {% if page > 1 %}
+    <a class="item" href="{{ url_for('orders.list_orders', page=page-1) }}">Previous</a>
+    {% endif %}
+
+    {% for p in range(1, pages+1) %}
+    <a class="item {% if p == page %}active{% endif %}"
+       href="{{ url_for('orders.list_orders', page=p) }}">
+        {{ p }}
+    </a>
+    {% endfor %}
+
+    {% if page < pages %}
+    <a class="item" href="{{ url_for('orders.list_orders', page=page+1) }}">Next</a>
+    {% endif %}
+</div>
+
 {% endif %}
 
 {% endblock %}

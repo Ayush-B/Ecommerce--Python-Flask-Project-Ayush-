@@ -11,7 +11,7 @@ from flask import Blueprint, request, jsonify, render_template, session, redirec
 from sqlalchemy import desc
 
 from ..extensions import db
-from ..models import Order
+from ..models import Order, User
 from ..utils.auth_decorators import login_required
 
 orders_bp = Blueprint("orders", __name__, url_prefix="/orders")
@@ -37,23 +37,22 @@ def _user_can_access_order(order):
 @login_required
 def list_orders():
     """
-    List orders for the logged-in user.
+    List orders.
 
-    Query params:
-      - page (int, default 1)
-    Pagination: 10 orders per page.
+    - Customers: only their own orders.
+    - Admins: all orders.
     """
-    # change until auth
-    user_id = session.get("user_id") or 1
-    role = session.get("role")
+    user_id = session["user_id"]
+    user = User.query.get(user_id)
 
     page = request.args.get("page", default=1, type=int)
     per_page = 10
 
-    base_query = Order.query.order_by(desc(Order.placed_at))
-
-    if role != "admin":
-        base_query = base_query.filter_by(user_id=user_id)
+    # Admin sees all orders, customer sees only theirs
+    if user.role == "admin":
+        base_query = Order.query
+    else:
+        base_query = Order.query.filter_by(user_id=user_id)
 
     pagination = (
         base_query
@@ -63,7 +62,6 @@ def list_orders():
 
     orders = pagination.items
 
-    # JSON mode preserved for tests / API
     if request.args.get("format") == "json":
         return jsonify(
             {
@@ -74,7 +72,6 @@ def list_orders():
             }
         )
 
-    # HTML mode
     return render_template(
         "orders/list.html",
         orders=orders,
@@ -88,20 +85,22 @@ def list_orders():
 @login_required
 def order_detail(order_id):
     """
-    View a single order.
+    Order detail.
 
-    - If ?format=json, return JSON.
-    - Otherwise render an HTML detail page.
+    - Customers: only their own orders.
+    - Admins: can view any order.
     """
-    # TEMP: same user_id fallback as above
-    user_id = session.get("user_id")
+    user_id = session["user_id"]
+    user = User.query.get(user_id)
 
-    order = Order.query.filter_by(id=order_id, user_id=user_id).first()
+    if user.role == "admin":
+        order = Order.query.filter_by(id=order_id).first()
+    else:
+        order = Order.query.filter_by(id=order_id, user_id=user_id).first()
 
     if not order:
         if request.args.get("format") == "json":
             return jsonify({"error": "Order not found"}), 404
-        # simple HTML 404 for now
         return "Order not found", 404
 
     if request.args.get("format") == "json":
