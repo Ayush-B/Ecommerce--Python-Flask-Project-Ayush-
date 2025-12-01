@@ -34,7 +34,7 @@ def _user_can_access_order(order):
 
 
 @orders_bp.get("/")
-# @login_required
+@login_required
 def list_orders():
     """
     List orders for the logged-in user.
@@ -85,6 +85,7 @@ def list_orders():
 
 
 @orders_bp.get("/<int:order_id>")
+@login_required
 def order_detail(order_id):
     """
     View a single order.
@@ -93,7 +94,7 @@ def order_detail(order_id):
     - Otherwise render an HTML detail page.
     """
     # TEMP: same user_id fallback as above
-    user_id = session.get("user_id") or 1
+    user_id = session.get("user_id")
 
     order = Order.query.filter_by(id=order_id, user_id=user_id).first()
 

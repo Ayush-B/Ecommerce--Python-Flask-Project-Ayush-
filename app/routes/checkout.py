@@ -11,11 +11,13 @@ from flask import Blueprint, request, jsonify, render_template, redirect, url_fo
 from ..services.cart import CartService
 from ..services.checkout import CheckoutService
 from ..models import User
+from ..utils.auth_decorators import login_required
 
 checkout_bp = Blueprint("checkout", __name__, url_prefix="/checkout")
 
 
 @checkout_bp.get("/")
+@login_required
 def checkout_review():
     """
     Checkout review.
@@ -43,14 +45,12 @@ def checkout_review():
 
 
 @checkout_bp.post("/")
+@login_required
 def checkout_process():
     """
     Begin checkout, run async payment, and return order result (JSON).
     """
-    # TEMPORARY: allow checkout without login for UI testing.
-    # When auth UI is in place, we will restore login_required
-    # and use session["user_id"].
-    user_id = session.get("user_id") or 1  # seeded admin or test user
+    user_id = session.get("user_id")
 
     # Run the async checkout logic
     result = asyncio.run(CheckoutService.process_checkout(user_id))

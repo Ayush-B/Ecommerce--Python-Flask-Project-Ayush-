@@ -5,7 +5,12 @@
 <h2 class="ui header">
     Order #{{ order.id }}
     <div class="sub header">
-        Placed at: {{ order.placed_at.isoformat() if order.placed_at else "Unknown" }}
+        Placed at:
+        {% if order.placed_at %}
+            {{ order.placed_at.strftime("%Y-%m-%d %H:%M:%S") }}
+        {% else %}
+            Unknown
+        {% endif %}
     </div>
 </h2>
 
@@ -16,8 +21,19 @@
             <p>
                 <span class="ui large label">{{ order.status }}</span>
             </p>
+
+            {% if order.status == "pending" %}
+            <form
+                action="{{ url_for('orders.cancel_order', order_id=order.id) }}"
+                method="post"
+                style="margin-top: 1em;"
+            >
+                <button class="ui red button">Cancel Order</button>
+            </form>
+            {% endif %}
         </div>
     </div>
+
     <div class="eight wide column">
         <div class="ui segment">
             <h4 class="ui header">Summary</h4>
@@ -46,6 +62,7 @@
                 <th class="collapsing">Subtotal</th>
             </tr>
         </thead>
+
         <tbody>
             {% for item in order.items %}
             <tr>
@@ -53,9 +70,10 @@
                     {% if item.product %}
                         {{ item.product.name }}
                     {% else %}
-                        [Product deleted]
+                        <i>[Product deleted]</i>
                     {% endif %}
                 </td>
+
                 <td>
                     {% if item.product %}
                         {{ item.product.sku }}
@@ -63,6 +81,7 @@
                         -
                     {% endif %}
                 </td>
+
                 <td>${{ "%.2f"|format(item.unit_price_cents / 100) }}</td>
                 <td>{{ item.qty }}</td>
                 <td>${{ "%.2f"|format(item.subtotal_cents / 100) }}</td>
