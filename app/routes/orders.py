@@ -7,14 +7,14 @@ Provides:
 - POST /orders/<id>/cancel : cancel a pending order
 """
 
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for
 from sqlalchemy import desc
 
 from ..extensions import db
 from ..models import Order
 from ..utils.auth_decorators import login_required
 
-orders_bp = Blueprint("orders", __name__)
+orders_bp = Blueprint("orders", __name__, url_prefix="/orders")
 
 
 def _user_can_access_order(order):
@@ -33,8 +33,8 @@ def _user_can_access_order(order):
     return order.user_id == current_user_id
 
 
-@orders_bp.get("/orders")
-@login_required
+@orders_bp.get("/")
+# @login_required
 def list_orders():
     """
     List orders for the logged-in user.
@@ -43,7 +43,8 @@ def list_orders():
       - page (int, default 1)
     Pagination: 10 orders per page.
     """
-    current_user_id = session["user_id"]
+    # change until auth
+    user_id = session.get("user_id") or 1
     role = session.get("role")
 
     page = request.args.get("page", default=1, type=int)
@@ -52,36 +53,60 @@ def list_orders():
     base_query = Order.query.order_by(desc(Order.placed_at))
 
     if role != "admin":
-        base_query = base_query.filter_by(user_id=current_user_id)
+        base_query = base_query.filter_by(user_id=user_id)
 
-    pagination = base_query.paginate(page=page, per_page=per_page, error_out=False)
+    pagination = (
+        base_query
+        .order_by(Order.placed_at.desc())
+        .paginate(page=page, per_page=per_page, error_out=False)
+    )
 
-    orders = [o.to_dict() for o in pagination.items]
+    orders = pagination.items
 
-    return jsonify(
-        {
-            "orders": orders,
-            "page": pagination.page,
-            "pages": pagination.pages,
-            "total": pagination.total,
-        }
+    # JSON mode preserved for tests / API
+    if request.args.get("format") == "json":
+        return jsonify(
+            {
+                "orders": [o.to_dict() for o in orders],
+                "page": pagination.page,
+                "pages": pagination.pages,
+                "total": pagination.total,
+            }
+        )
+
+    # HTML mode
+    return render_template(
+        "orders/list.html",
+        orders=orders,
+        page=pagination.page,
+        pages=pagination.pages,
+        total=pagination.total,
     )
 
 
-@orders_bp.get("/orders/<int:order_id>")
-@login_required
+@orders_bp.get("/<int:order_id>")
 def order_detail(order_id):
     """
-    Retrieve details for a single order that the user is allowed to see.
+    View a single order.
+
+    - If ?format=json, return JSON.
+    - Otherwise render an HTML detail page.
     """
-    order = Order.query.get(order_id)
+    # TEMP: same user_id fallback as above
+    user_id = session.get("user_id") or 1
+
+    order = Order.query.filter_by(id=order_id, user_id=user_id).first()
+
     if not order:
-        return jsonify({"error": "Order not found"}), 404
+        if request.args.get("format") == "json":
+            return jsonify({"error": "Order not found"}), 404
+        # simple HTML 404 for now
+        return "Order not found", 404
 
-    if not _user_can_access_order(order):
-        return jsonify({"error": "Forbidden"}), 403
+    if request.args.get("format") == "json":
+        return jsonify(order.to_dict())
 
-    return jsonify(order.to_dict())
+    return render_template("orders/detail.html", order=order)
 
 
 @orders_bp.post("/orders/<int:order_id>/cancel")

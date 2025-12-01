@@ -1,0 +1,67 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<h2 class="ui header">
+    Order #{{ order.id }}
+    <div class="sub header">
+        Placed at: {{ order.placed_at.isoformat() if order.placed_at else "Unknown" }}
+    </div>
+</h2>
+
+<div class="ui grid">
+    <div class="eight wide column">
+        <div class="ui segment">
+            <h4 class="ui header">Status</h4>
+            <p>
+                <span class="ui large label">{{ order.status }}</span>
+            </p>
+        </div>
+    </div>
+    <div class="eight wide column">
+        <div class="ui segment">
+            <h4 class="ui header">Summary</h4>
+            <p>
+                <strong>Total:</strong>
+                ${{ "%.2f"|format(order.total_cents / 100) }}
+            </p>
+            <p style="font-size: 0.9em; color: #666;">
+                Prices are captured at the time of purchase and do not change
+                if product prices are updated later.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="ui segment">
+    <h4 class="ui header">Items</h4>
+
+    <table class="ui very basic celled table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th class="collapsing">SKU</th>
+                <th class="collapsing">Unit price</th>
+                <th class="collapsing">Qty</th>
+                <th class="collapsing">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items %}
+            <tr>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.sku }}</td>
+                <td>${{ "%.2f"|format(item.unit_price_cents / 100) }}</td>
+                <td>{{ item.qty }}</td>
+                <td>${{ "%.2f"|format(item.subtotal_cents / 100) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<a href="{{ url_for('orders.list_orders') }}" class="ui button">
+    Back to orders
+</a>
+
+{% endblock %}

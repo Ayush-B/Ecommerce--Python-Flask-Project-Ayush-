@@ -80,7 +80,7 @@ $(function() {
 
         $btn.addClass('loading');
 
-        fetch("/checkout", {
+        fetch("{{ url_for('checkout.checkout_process') }}", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

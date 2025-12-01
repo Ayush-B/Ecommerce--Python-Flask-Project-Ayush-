@@ -15,7 +15,7 @@ from ..models import User
 checkout_bp = Blueprint("checkout", __name__, url_prefix="/checkout")
 
 
-@checkout_bp.get("")
+@checkout_bp.get("/")
 def checkout_review():
     """
     Checkout review.
@@ -42,7 +42,7 @@ def checkout_review():
     return render_template("checkout/review.html", cart=summary, user=user)
 
 
-@checkout_bp.post("")
+@checkout_bp.post("/")
 def checkout_process():
     """
     Begin checkout, run async payment, and return order result (JSON).
