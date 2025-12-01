@@ -2,7 +2,11 @@
 Entry point for running the ecommerce Flask application.
 """
 
+from dotenv import load_dotenv
 from app import create_app
+
+# Load variables from .env into the environment
+load_dotenv()
 
 app = create_app()
 
