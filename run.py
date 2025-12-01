@@ -1,10 +1,11 @@
 """
-Entry point for the ecommerce Flask application.
-
-For now this file is only a placeholder. In later commits we will
-import the real Flask application factory from app and run it.
+Entry point for running the ecommerce Flask application.
 """
 
+from app import create_app
+
+app = create_app()
+
 if __name__ == "__main__":
-    # Temporary message so we know the script runs at all.
-    print("Ecommerce project skeleton is set up. Flask app will be added in the next commits.")
+    # Running in development mode, configured via FLASK_ENV
+    app.run(host="127.0.0.1", port=5000)
