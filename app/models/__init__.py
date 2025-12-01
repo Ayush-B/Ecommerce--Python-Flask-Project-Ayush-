@@ -1,11 +1,12 @@
 """
 Models package.
 
-This package groups all ORM models. The BaseModel provides shared fields
-and helper methods, while concrete models define domain-specific data.
+This package groups all ORM models used by the ecommerce application.
 """
 
 from .base import BaseModel
 from .user import User
+from .category import Category
+from .product import Product
 
-__all__ = ["BaseModel", "User"]
+__all__ = ["BaseModel", "User", "Category", "Product"]
