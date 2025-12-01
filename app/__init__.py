@@ -11,6 +11,7 @@ from flask import Flask
 from .config import get_config
 from .extensions import db
 from .utils.admin_seed import seed_admin
+from .routes.auth import auth_bp
 
 
 def create_app():
@@ -49,11 +50,10 @@ def register_extensions(app):
 
 def register_routes(app):
     """
-    Attach simple placeholder routes.
-
-    Full blueprints for shop, auth, and admin will be added in later commits.
+    Attach blueprint routes.
     """
+    app.register_blueprint(auth_bp)
 
     @app.get("/")
     def index():
-        return "Ecommerce app is running. Database and User model are initialized."
+        return "Ecommerce application backend is running."
