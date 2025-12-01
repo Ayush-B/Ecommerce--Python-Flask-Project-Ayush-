@@ -20,14 +20,14 @@ from app.extensions import db
 from app.models import Category, Product
 
 
-def ensure_sample_product_id(app) -> int:
+def ensure_sample_product_id(apps) -> int:
     """
     Ensure there is at least one active product for testing.
 
     Returns:
         int: product_id to be used in tests
     """
-    with app.app_context():
+    with apps.app_context():
         product = Product.query.filter_by(status="active").first()
         if product:
             return product.id
@@ -110,14 +110,14 @@ def create_order_via_checkout(client, product_id: int):
     return None
 
 
-def run_order_tests(app):
+def run_order_tests(apps):
     """
     Drive the full order flow for manual testing.
     """
-    product_id = ensure_sample_product_id(app)
+    product_id = ensure_sample_product_id(apps)
     print(f"Using product_id={product_id}")
 
-    client = app.test_client()
+    client = apps.test_client()
 
     # Register and login
     register_and_login(client)
