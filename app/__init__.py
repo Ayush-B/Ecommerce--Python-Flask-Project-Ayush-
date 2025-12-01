@@ -19,6 +19,7 @@ from .routes.orders import orders_bp
 from .routes.admin_products import admin_products_bp
 from .routes.admin_users import admin_users_bp
 from .routes.admin_orders import admin_orders_bp
+from .routes.admin_activity import admin_activity_bp
 
 
 def create_app():
@@ -67,7 +68,8 @@ def register_routes(app):
     app.register_blueprint(admin_products_bp)
     app.register_blueprint(admin_users_bp)
     app.register_blueprint(admin_orders_bp)
+    app.register_blueprint(admin_activity_bp)
 
     @app.get("/")
     def index():
-        return "Ecommerce backend is running with auth, catalog, cart, checkout, orders, and admin products."
+        return "Ecommerce backend is running with full admin, order, and activity logging."
