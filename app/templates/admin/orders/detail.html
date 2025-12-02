@@ -1,0 +1,37 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<h2 class="ui header">Order Management</h2>
+
+<table class="ui celled table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Placed</th>
+            <th class="collapsing">Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.user_id }}</td>
+            <td>${{ "%.2f"|format(order.total_cents / 100) }}</td>
+            <td>{{ order.status }}</td>
+            <td>{{ order.placed_at }}</td>
+            <td>
+                <a href="{{ url_for('admin_orders.order_detail', order_id=order.id) }}" class="ui button">
+                    View
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+
+</table>
+
+{% endblock %}

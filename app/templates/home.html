@@ -76,7 +76,7 @@
             <div class="ui stackable four cards" style="margin-top: 1.5em;">
                 {% for p in featured_products %}
                     <div class="card">
-                        <div class="image" style="min-height: 200px; display: flex; align-items: center; justify-content: center; background: #f0f0f0;">
+                        <div class="image product-card-image">
                             {% if p.image_url %}
                                 <img src="{{ p.image_url }}" alt="{{ p.name }}">
                             {% else %}

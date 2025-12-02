@@ -1,0 +1,48 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<h2 class="ui header">Create New Product</h2>
+
+<form class="ui form" method="post" action="{{ url_for('admin_products.create_product') }}">
+    <div class="two fields">
+        <div class="field">
+            <label>Name</label>
+            <input type="text" name="name">
+        </div>
+
+        <div class="field">
+            <label>SKU</label>
+            <input type="text" name="sku">
+        </div>
+    </div>
+
+    <div class="field">
+        <label>Description</label>
+        <textarea name="description"></textarea>
+    </div>
+
+    <div class="three fields">
+        <div class="field">
+            <label>Price (USD)</label>
+            <input type="number" min="0" step="0.01" name="price">
+        </div>
+
+        <div class="field">
+            <label>Quantity</label>
+            <input type="number" min="0" name="qty">
+        </div>
+
+        <div class="field">
+            <label>Category</label>
+            <input type="text" name="category">
+        </div>
+    </div>
+
+    <div class="field">
+        <label>Image URL</label>
+        <input type="text" name="image_url">
+    </div>
+
+    <button class="ui primary button">Create Product</button>
+</form>
+{% endblock %}

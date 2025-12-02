@@ -1,234 +1,189 @@
 """
 Admin product management routes.
 
-Provides:
-- GET  /admin/products              : list products (with optional status filter)
-- POST /admin/products/new          : create a new product
-- POST /admin/products/<id>/edit    : edit an existing product
-- POST /admin/products/<id>/delete  : archive a product (soft delete)
+Supports both JSON API (for tests/scripts) and HTML forms (for the admin UI).
 """
 
-import json
-from flask import Blueprint, request, jsonify, session
-from sqlalchemy import desc
+from flask import (
+    Blueprint,
+    request,
+    jsonify,
+    render_template,
+    redirect,
+    url_for,
+)
 
-from ..extensions import db
-from ..models import Product, Category, ActivityLog
+from ..models import Product, Category
 from ..utils.auth_decorators import admin_required
 
 admin_products_bp = Blueprint("admin_products", __name__, url_prefix="/admin/products")
 
 
-def _get_or_create_category(name: str) -> Category:
-    """
-    Find a category by name or create it if it does not exist.
-    """
-    category = Category.query.filter_by(name=name).first()
-    if category:
-        return category
-
-    category = Category(name=name, description=f"Category {name}")
-    db.session.add(category)
-    db.session.flush()
-    return category
-
-
-def _log_admin_action(action_type: str, target_type: str, target_id: int, details: dict):
-    """
-    Create an ActivityLog entry for an admin action.
-    """
-    admin_id = session.get("user_id")
-    log = ActivityLog(
-        admin_id=admin_id,
-        action_type=action_type,
-        target_type=target_type,
-        target_id=target_id,
-        details=json.dumps(details),
-    )
-    db.session.add(log)
-
-
-@admin_products_bp.get("")
+@admin_products_bp.get("/")
 @admin_required
 def list_products():
     """
-    List products for admin.
+    Admin product list.
 
-    Query parameters:
-    - page (int, default 1)
-    - status (optional, e.g. 'active', 'archived', 'deleted')
+    - ?format=json or JSON Accept header → JSON list
+    - default (browser) → HTML table
     """
-    page = request.args.get("page", default=1, type=int)
-    status = request.args.get("status")
-    per_page = 12
+    products = Product.query.order_by(Product.created_at.desc()).all()
 
-    query = Product.query.order_by(desc(Product.created_at))
+    if request.args.get("format") == "json" or (
+        request.accept_mimetypes["application/json"]
+        > request.accept_mimetypes["text/html"]
+    ):
+        return jsonify([p.to_dict() for p in products])
 
-    if status:
-        query = query.filter_by(status=status)
-
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    products = [p.to_dict() for p in pagination.items]
-
-    return jsonify(
-        {
-            "products": products,
-            "page": pagination.page,
-            "pages": pagination.pages,
-            "total": pagination.total,
-        }
-    )
+    return render_template("admin/products/list.html", products=products)
 
 
-@admin_products_bp.post("/new")
+@admin_products_bp.get("/new")
+@admin_required
+def new_product_page():
+    """
+    Render HTML form to create a product.
+    """
+    return render_template("admin/products/new.html")
+
+
+@admin_products_bp.post("/")
 @admin_required
 def create_product():
     """
-    Create a new product.
+    Create a product.
 
-    Expected JSON body:
-    - name (str, required)
-    - sku (str, required, unique)
-    - description (str, optional)
-    - price_cents (int, required)
-    - qty (int, required)
-    - category_name (str, optional)
-    - status (str, optional, default 'active')
-    - image_url (str, optional)
+    - JSON body (tests/scripts) → JSON response
+    - HTML form POST → redirect back to product list
     """
-    data = request.json or {}
+    data = request.get_json(silent=True) or request.form
 
     name = data.get("name")
     sku = data.get("sku")
-    price_cents = data.get("price_cents")
-    qty = data.get("qty")
+    description = data.get("description")
+    price_raw = data.get("price")
+    qty_raw = data.get("qty")
+    category_name = data.get("category")
+    image_url = data.get("image_url")
 
-    if not name or not sku or price_cents is None or qty is None:
-        return jsonify({"error": "name, sku, price_cents, and qty are required"}), 400
+    if not name or not sku:
+        # For HTML, you might later add flash + redirect, but for now JSON error is fine
+        return jsonify({"error": "Name and SKU are required"}), 400
 
     try:
-        price_cents = int(price_cents)
-        qty = int(qty)
-    except (ValueError, TypeError):
-        return jsonify({"error": "price_cents and qty must be integers"}), 400
+        price_cents = int(float(price_raw or 0) * 100)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid price value"}), 400
 
-    if Product.query.filter_by(sku=sku).first():
-        return jsonify({"error": "SKU already exists"}), 400
+    try:
+        qty = int(qty_raw or 0)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid quantity value"}), 400
 
-    category = None
-    category_name = data.get("category_name")
+    category_obj = None
     if category_name:
-        category = _get_or_create_category(category_name)
+        category_obj = Category.query.filter_by(name=category_name).first()
+        if not category_obj:
+            category_obj = Category(name=category_name, description="").save()
 
     product = Product(
         name=name,
         sku=sku,
-        description=data.get("description"),
+        description=description,
         price_cents=price_cents,
         qty=qty,
-        category=category,
-        status=data.get("status", "active"),
-        image_url=data.get("image_url"),
+        category=category_obj,
+        image_url=image_url,
+        status="active",
     )
+    product.save()
 
-    db.session.add(product)
-    db.session.flush()
+    # JSON clients
+    if request.args.get("format") == "json" or request.is_json:
+        return jsonify({"message": "Product created", "product": product.to_dict()}), 201
 
-    _log_admin_action(
-        action_type="product_create",
-        target_type="Product",
-        target_id=product.id,
-        details=data,
-    )
-
-    db.session.commit()
-
-    return jsonify({"message": "Product created", "product": product.to_dict()}), 201
+    # HTML clients → back to list
+    return redirect(url_for("admin_products.list_products"))
 
 
-@admin_products_bp.post("/<int:product_id>/edit")
+@admin_products_bp.get("/<int:product_id>/edit")
 @admin_required
-def edit_product(product_id):
+def edit_product_page(product_id):
     """
-    Edit an existing product.
-
-    JSON body may include:
-    - name
-    - description
-    - price_cents
-    - qty
-    - category_name
-    - status
-    - image_url
+    Render HTML form to edit an existing product.
     """
-    product = Product.query.get(product_id)
-    if not product:
-        return jsonify({"error": "Product not found"}), 404
-
-    data = request.json or {}
-
-    if "name" in data:
-        product.name = data["name"]
-    if "description" in data:
-        product.description = data["description"]
-    if "price_cents" in data:
-        try:
-            product.price_cents = int(data["price_cents"])
-        except (ValueError, TypeError):
-            return jsonify({"error": "price_cents must be integer"}), 400
-    if "qty" in data:
-        try:
-            product.qty = int(data["qty"])
-        except (ValueError, TypeError):
-            return jsonify({"error": "qty must be integer"}), 400
-    if "status" in data:
-        product.status = data["status"]
-    if "image_url" in data:
-        product.image_url = data["image_url"]
-    if "category_name" in data and data["category_name"]:
-        category = _get_or_create_category(data["category_name"])
-        product.category = category
-
-    db.session.add(product)
-
-    _log_admin_action(
-        action_type="product_edit",
-        target_type="Product",
-        target_id=product.id,
-        details=data,
-    )
-
-    db.session.commit()
-
-    return jsonify({"message": "Product updated", "product": product.to_dict()})
+    product = Product.query.get_or_404(product_id)
+    return render_template("admin/products/edit.html", product=product)
 
 
-@admin_products_bp.post("/<int:product_id>/delete")
+@admin_products_bp.post("/<int:product_id>")
 @admin_required
-def delete_product(product_id):
+def update_product(product_id):
     """
-    Archive a product (soft delete) by setting its status to 'archived'.
+    Update a product.
 
-    This keeps the product in the database so existing orders remain valid.
+    - JSON body → JSON response
+    - HTML form POST → redirect to product list
     """
-    product = Product.query.get(product_id)
-    if not product:
-        return jsonify({"error": "Product not found"}), 404
+    product = Product.query.get_or_404(product_id)
 
-    # Soft delete: mark as archived
-    previous_status = product.status
+    data = request.get_json(silent=True) or request.form
+
+    name = data.get("name")
+    sku = data.get("sku")
+    description = data.get("description")
+    price_raw = data.get("price")
+    qty_raw = data.get("qty")
+    category_name = data.get("category")
+    image_url = data.get("image_url")
+
+    if not name or not sku:
+        return jsonify({"error": "Name and SKU are required"}), 400
+
+    try:
+        price_cents = int(float(price_raw or 0) * 100)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid price value"}), 400
+
+    try:
+        qty = int(qty_raw or 0)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid quantity value"}), 400
+
+    category_obj = None
+    if category_name:
+        category_obj = Category.query.filter_by(name=category_name).first()
+        if not category_obj:
+            category_obj = Category(name=category_name, description="").save()
+
+    product.name = name
+    product.sku = sku
+    product.description = description
+    product.price_cents = price_cents
+    product.qty = qty
+    product.category = category_obj
+    product.image_url = image_url
+
+    product.save()
+
+    if request.args.get("format") == "json" or request.is_json:
+        return jsonify({"message": "Product updated", "product": product.to_dict()})
+
+    return redirect(url_for("admin_products.list_products"))
+
+
+@admin_products_bp.post("/<int:product_id>/archive")
+@admin_required
+def archive_product(product_id):
+    """
+    Archive a product (status = 'archived') instead of hard deleting it.
+    """
+    product = Product.query.get_or_404(product_id)
     product.status = "archived"
+    product.save()
 
-    db.session.add(product)
+    if request.args.get("format") == "json" or request.is_json:
+        return jsonify({"message": "Product archived", "product": product.to_dict()})
 
-    details = {"previous_status": previous_status, "new_status": "archived"}
-    _log_admin_action(
-        action_type="product_archive",
-        target_type="Product",
-        target_id=product.id,
-        details=details,
-    )
-
-    db.session.commit()
-
-    return jsonify({"message": "Product archived", "product": product.to_dict()})
+    return redirect(url_for("admin_products.list_products"))

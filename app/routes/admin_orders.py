@@ -13,7 +13,7 @@ Business rules:
 """
 
 import json
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for
 
 from ..extensions import db
 from ..models import Order, ActivityLog, Product
@@ -39,7 +39,6 @@ def _log_admin_action(action_type: str, target_id: int, details: dict):
     """
     Create an ActivityLog entry for an admin order action.
     """
-    from flask import session  # imported here to avoid circulars at import time
 
     admin_id = session.get("user_id")
     log = ActivityLog(
@@ -52,49 +51,58 @@ def _log_admin_action(action_type: str, target_id: int, details: dict):
     db.session.add(log)
 
 
-@admin_orders_bp.get("")
+@admin_orders_bp.get("/")
 @admin_required
 def list_orders():
     """
-    List orders for admins.
+    Admin order list.
 
-    Query parameters:
-    - page (int, default 1)
-    - status (optional): one of pending, paid, shipped, canceled
+    - ?format=json → JSON
+    - default     → HTML
     """
-    page = request.args.get("page", default=1, type=int)
-    status_filter = request.args.get("status")
-
+    page = request.args.get("page", type=int, default=1)
     per_page = 10
-    query = Order.query.order_by(Order.placed_at.desc())
 
-    if status_filter:
-        query = query.filter_by(status=status_filter)
+    pagination = (
+        Order.query.order_by(Order.placed_at.desc())
+        .paginate(page=page, per_page=per_page, error_out=False)
+    )
+    orders = pagination.items
 
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    orders = [o.to_dict() for o in pagination.items]
+    if request.args.get("format") == "json" or (
+        request.accept_mimetypes["application/json"]
+        > request.accept_mimetypes["text/html"]
+    ):
+        return jsonify(
+            {
+                "orders": [o.to_dict() for o in orders],
+                "page": pagination.page,
+                "pages": pagination.pages,
+                "total": pagination.total,
+            }
+        )
 
-    return jsonify(
-        {
-            "orders": orders,
-            "page": pagination.page,
-            "pages": pagination.pages,
-            "total": pagination.total,
-        }
+    return render_template(
+        "admin/orders/list.html",
+        orders=orders,
+        page=pagination.page,
+        pages=pagination.pages,
+        total=pagination.total,
     )
 
 
 @admin_orders_bp.get("/<int:order_id>")
 @admin_required
 def order_detail(order_id):
-    """
-    View a specific order's details.
-    """
-    order = Order.query.get(order_id)
-    if not order:
-        return jsonify({"error": "Order not found"}), 404
+    order = Order.query.get_or_404(order_id)
 
-    return jsonify(order.to_dict())
+    if request.args.get("format") == "json" or (
+        request.accept_mimetypes["application/json"]
+        > request.accept_mimetypes["text/html"]
+    ):
+        return jsonify(order.to_dict())
+
+    return render_template("admin/orders/detail.html", order=order)
 
 
 @admin_orders_bp.post("/<int:order_id>/change_status")

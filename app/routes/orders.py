@@ -49,10 +49,7 @@ def list_orders():
     per_page = 10
 
     # Admin sees all orders, customer sees only theirs
-    if user.role == "admin":
-        base_query = Order.query
-    else:
-        base_query = Order.query.filter_by(user_id=user_id)
+    base_query = Order.query.filter_by(user_id=user_id)
 
     pagination = (
         base_query

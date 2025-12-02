@@ -8,7 +8,7 @@ Provides:
 
 import json
 import time
-from flask import Blueprint, jsonify, request, Response, current_app
+from flask import Blueprint, jsonify, request, Response, current_app, render_template
 
 from ..models import ActivityLog
 from ..services.activity_log import ActivityLogService
@@ -17,31 +17,38 @@ from ..utils.auth_decorators import admin_required
 admin_activity_bp = Blueprint("admin_activity", __name__, url_prefix="/admin/activity")
 
 
-@admin_activity_bp.get("")
+@admin_activity_bp.get("/")
 @admin_required
 def activity_list():
-    """
-    Paginated activity log listing.
+    page = request.args.get("page", type=int, default=1)
+    per_page = 10
 
-    Query parameters:
-      - page (int, default 1)
-      - admin_id (optional, int)
-      - action_type (optional, str)
-      - target_type (optional, str)
-    """
-    page = request.args.get("page", default=1, type=int)
-    admin_id = request.args.get("admin_id", type=int)
-    action_type = request.args.get("action_type")
-    target_type = request.args.get("target_type")
-
-    data = ActivityLogService.list_logs(
-        page=page,
-        per_page=10,
-        admin_id=admin_id,
-        action_type=action_type,
-        target_type=target_type,
+    pagination = (
+        ActivityLog.query.order_by(ActivityLog.timestamp.desc())
+        .paginate(page=page, per_page=per_page, error_out=False)
     )
-    return jsonify(data)
+    logs = pagination.items
+
+    if request.args.get("format") == "json" or (
+        request.accept_mimetypes["application/json"]
+        > request.accept_mimetypes["text/html"]
+    ):
+        return jsonify(
+            {
+                "logs": [log.to_dict() for log in logs],
+                "page": pagination.page,
+                "pages": pagination.pages,
+                "total": pagination.total,
+            }
+        )
+
+    return render_template(
+        "admin/activity/list.html",
+        logs=logs,
+        page=pagination.page,
+        pages=pagination.pages,
+        total=pagination.total,
+    )
 
 
 @admin_activity_bp.get("/stream")

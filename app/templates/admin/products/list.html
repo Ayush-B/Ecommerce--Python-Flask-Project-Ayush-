@@ -1,0 +1,48 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<h2 class="ui header">Product Management</h2>
+
+<a href="{{ url_for('admin_products.new_product_page') }}" class="ui primary button">
+    <i class="plus icon"></i> New Product
+</a>
+
+<table class="ui celled table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>SKU</th>
+            <th>Price</th>
+            <th>Qty</th>
+            <th>Status</th>
+            <th>Category</th>
+            <th class="collapsing">Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for product in products %}
+        <tr>
+            <td>{{ product.name }}</td>
+            <td>{{ product.sku }}</td>
+            <td>${{ "%.2f"|format(product.price_cents / 100) }}</td>
+            <td>{{ product.qty }}</td>
+            <td>{{ product.status }}</td>
+            <td>{{ product.category.name if product.category else "-" }}</td>
+
+            <td>
+                <a class="ui button" href="{{ url_for('admin_products.edit_product_page', product_id=product.id) }}">
+                    Edit
+                </a>
+
+                {% if product.status != "archived" %}
+                <form method="post" action="{{ url_for('admin_products.archive_product', product_id=product.id) }}" style="display:inline;">
+                    <button class="ui red button">Archive</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

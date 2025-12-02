@@ -14,7 +14,7 @@ Business rules:
 import json
 import os
 
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
 from sqlalchemy import desc
 
 from ..extensions import db
@@ -62,44 +62,22 @@ def _log_admin_action(action_type: str, target_id: int, details: dict):
     db.session.add(log)
 
 
-@admin_users_bp.get("")
+@admin_users_bp.get("/")
 @admin_required
 def list_users():
-    """
-    List users for admin.
+    users = User.query.order_by(User.created_at.desc()).all()
+    seeded_admin_email = os.getenv("ADMIN_EMAIL")
 
-    Query parameters:
-    - page (int, default 1)
-    - role (optional)       : filter by role
-    - is_active (optional)  : 'true' or 'false' filter
-    """
-    page = request.args.get("page", default=1, type=int)
-    role_filter = request.args.get("role")
-    is_active_filter = request.args.get("is_active")
+    if request.args.get("format") == "json" or (
+        request.accept_mimetypes["application/json"]
+        > request.accept_mimetypes["text/html"]
+    ):
+        return jsonify([u.to_dict() for u in users])
 
-    per_page = 20
-
-    query = User.query.order_by(desc(User.created_at))
-
-    if role_filter:
-        query = query.filter_by(role=role_filter)
-
-    if is_active_filter is not None:
-        if is_active_filter.lower() == "true":
-            query = query.filter_by(is_active=True)
-        elif is_active_filter.lower() == "false":
-            query = query.filter_by(is_active=False)
-
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    users = [u.to_dict() for u in pagination.items]
-
-    return jsonify(
-        {
-            "users": users,
-            "page": pagination.page,
-            "pages": pagination.pages,
-            "total": pagination.total,
-        }
+    return render_template(
+        "admin/users/list.html",
+        users=users,
+        seeded_admin=seeded_admin_email,
     )
 
 

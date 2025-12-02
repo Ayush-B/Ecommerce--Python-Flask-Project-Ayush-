@@ -41,3 +41,24 @@ footer a {
     justify-content: center;
     background: #f0f0f0;
 }
+
+/* Product detail main image */
+.product-detail-image img {
+    width: 100%; !important;
+    height: 350px; !important;
+    object-fit: cover;  /* crop while maintaining aspect ratio */
+    display: block;
+}
+
+/* Product listing card images */
+.product-card-image {
+    height: 200px;      /* fixed image container height */
+    overflow: hidden;   /* hide overflow if image is taller */
+}
+
+.product-card-image img {
+    width: 100%; !important;
+    height: 100%; !important;
+    object-fit: cover;  /* fill box, crop as needed */
+    display: block;
+}
