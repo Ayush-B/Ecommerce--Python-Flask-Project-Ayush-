@@ -17,6 +17,7 @@ from ..utils.auth_decorators import admin_required
 admin_activity_bp = Blueprint("admin_activity", __name__, url_prefix="/admin/activity")
 
 
+#decorator
 @admin_activity_bp.get("/")
 @admin_required
 def activity_list():
@@ -83,11 +84,11 @@ def activity_stream():
                     .all()
                 )
 
-                for log in logs:
+                for log in logs: #iteration
                     state["last_id"] = log.id
                     payload = json.dumps(log.to_dict())
                     # SSE format: "data: <payload>\n\n"
-                    yield f"data: {payload}\n\n"
+                    yield f"data: {payload}\n\n" #generator function
 
                 # Avoid a tight polling loop
                 time.sleep(1)
